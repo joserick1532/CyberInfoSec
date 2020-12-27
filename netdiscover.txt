@@ -1,3 +1,0 @@
-*netdiscover*
-# netdiscover -r 10.0.5.0/24
-# netdiscover -i enp0s3 -r 10.0.5.0/24
