@@ -1,0 +1,125 @@
+*****NIKTO*****
+
+$ man nikto
+$ nikto -h
+
+- Nikto no esta diseñado para ser sigilosa, ya que deja rastros de logs o en IPS/IDS, sin emabargo soporta metodos anti IDS de LibWhisker en caso se requeira evaluar un sistema IDS.
+
+Web server vulnerability scanner
+	-> Server and software misconfigs
+	-> Default files and programs
+	-> Insecure files and programs
+	-> Outdated servers and programs
+
+Options:
+
+-Cgidirs -> Scan CGI directories "none" or "all" may be used to scan all CGI dirs. ...
+
+(Common Gateway Interface: CGI is an interface specificatio for web servers to execute programs like console apps(cli programs) a CGI scrpit executes at the time a request is made and generates HTML. So an HTTP GET or POST request from the client may send HTML form data to the CGI program via standar input)
+
+
+-config -> Specify an alternative confg file to use instead of the config.txt located in the install dir.
+
+-dbcheck -> Check the sca databases for syntax erros.
+
+-Display -> Control the output
+	1 - Shows redirects
+	2 - Shows coockies received
+	3 - Show all 200/OK responses
+	4 - Show URLs wich require auth
+	D - Debug Output
+	V - Verbose Output
+
+-evasion -> Specify the LibWhsker encoding technique to use. ( see the LibWhisker docs).
+	1 - Random URI enconding (non-UTF8)
+	2 - Directory self-reference (/./)
+	3 - Premature URL ending
+	...
+	8 - Use Windows directory separator (\)
+	A - Use carriage return (0x0d) as a request spacer
+	B - Use binary value 0x0b as a request spacer
+
+-findonly -> Only discover HTTP(S) ports, do not perform a security scan
+
+-Format -> Save the output -o (-output)
+	csv - a comma-separated list
+	htm - an HTML report
+	txt - a text report
+	xml - an XML report
+
+-host -> Host(s) to target. Can be an IP add, hostname or text file of hosts. Can also parse nmap -oG style output.
+
+-id -> ID and password for basic host auth "id:passwd".
+
+-list-plugins -> Will list al plugins that Nikto can run against targets
+
+-mutate -> Cause Nikto to combine test or attempt to guess values.
+	1 - Test all files with all root dirs
+	2 - Guess for passwd file names
+	3 - Enumerate user names via Apache (/~user type requests)
+	4 - Enumerate user names via cgiwrap
+	5 - Attempt to brute force sub-domain names, assumens hostname is the parent domain
+	6 - Attempt to guess directory names
+
+-mutate-options -> Extra info for mutates
+
+-nointeractive -> Disable interactv features
+
+-nolookup -> Dont perform lookups on IP addrs.
+
+-nossl -> Dont use SSL to connect to the server
+
+-no404 -> Disable 404 checking
+
+-ooutput -> Write output to the file specified
+
+-plugins -> Select which pulgins will be run on the specified targets ( comma separated), ALL specifies all plugins shall be run and NON specifies no plugins shall be run. Default is ALL.
+
+-port -> TCP ports to target.(i.e, 80-90) or (i.e 80,88,90). If not specified port 80 is used.
+
+-Pause -> Seconds to delay between each test.
+
+-root -> Prepend the value specified to the begining of every request. Is usefull to test apps or web servers which have all of their files under a certain dir.
+
+-ssl -> Only test SSL on the ports specified. This will dramatically speed up request to HTTPS ports.
+
+-Single -> Performa a single request to target server. Will promtp options to specify.
+
+-timeout -> Seconds to wait before timing out a req (defaul 10 secs)
+
+-Tuning -> Control the test that is run againts a target. (if used x will reverse tuning excluing the selected tests)
+	0 - File upload
+	1 - Interesting File / Seen in logs
+	2 - Misconfg / Defualt file
+	3 - Info disclosure
+	4 - Injection (XSS/Script/HTML)
+	5 - Remote file retriev
+	6 - Denial of Service
+	8 - Command Exec / Remote Shell
+	9 - SQL injection
+	a - Auth bypass
+	b - Softwarte Identf
+	c - Remote Source inclusion
+	x - Reverse tunning
+
+-useproxy -> Use the HTTP proxy defined in the config file
+
+-update -> Update the plugins and databases directly from cirt.net
+
+-vhost -> Scpecify the Host header to be sent to the target
+
+*FILES*
+
+nikto.conf -> parsed by order
+	- /etc/nikto.conf
+	- $HOME/nikto.conf
+	- ./nickto.conf
+
+${NIKTO_DIR}/plugins/db* -> db that nikto uses to check for vulns and issues.
+
+${NIKTO_DIR}/plugins/*.plugin -> All niktos plugins
+
+
+${NIKTO_DIR}/tempaltes -> templates for output formats
+
+

@@ -1,0 +1,289 @@
+******** nmap *************
+
+
+
+sudo nmap -e enp0s3 -sS 10.0.2.0/24
+
+
+
+
+
+
+
+-----------------------------------
+            EJEMPLOS
+-----------------------------------
+
+- BASH LINUX :
+---
+ports=$(nmap -p- --min-rate=1000 -T4 10.10.10.27 | grep ^[0-9] | cut -d '/' -f 1 | tr '\n' ',' | sed s/,$//)
+
+nmap -sC -sV -p$ports 10.10.10.27
+---
+
+nmap -v scanme.nmap.org
+
+-> Esta opcion sondea todos los puertos TCP reservados en el servidor scanme.nmap.org. La opcion -v activa el modo detallado ( verbose)
+
+nmap -sS -O 
+scanme.nmap.org/24
+-> Lanza un sondeo de tipo SYN sigiloso contra cada una de las 255 máquinas en la "clase C" de la red donde está el sistema "scanme". Tambien intenta determinar cual es el sistema operativo que se ejecuta en cada máquina que esté encendida. (requiere root)
+
+nmap -sV -p 22,53,110,143,4553 198.116.0-255.1-127
+
+-> Lanza una enumeracion de equipos y un sonde TCP a cada uno de la primera mitad de las 255 posibles subredes de obit en la red clse B 198.116. Para cualquier puerto que se enceuntre abierto se realizara una deteccion de versuion para determian que aplicacion se esta ejecutando
+
+nmap -v -iR 100000 -P0 -p 80
+
+-> Solicita a Nmap que eleija 100.000 sistemas aleatoriamente y los sondee buscando servidores de pérot 80 (web). La enumeracion de sisetmas se deshabilita con -P0
+
+nmap -P0 -p80 -oX logs/pb-port80scan.xml -oG logs/pb-port80scan.gnmap 216.163.128.20/20
+
+-> Esto sondea 4096 IPs para buscar cualqueir servidor web ( sin enviar sondas ICMP) y guarda la salida en formato para grep y xml
+
+
+
+# nmap -A -T4 scanme.nmap.org saladejuegos
+
+# nmap -A -T4 qsystem.com.pe
+
+
+# nmap -s 10.0.5.0/24 (parecido a netdiscover)
+#nmap -sS 10.0.5.5 (es una busqueda simple)
+#nmap -sT 10.0.5.5 
+
+#nmap -sS -A 10.0.5.5 (es una busqeuda con mayor detalles)(muestra fingerprints rsa ecdsa etc y opciones de peurtos )
+
+
+
+
+
+
+
+nmap usa raw packets para determinar los equipos disponibles en una red, servicios, sistemas operativos,filtros y firewalls,etc.
+Se dividen a los puertos en seis estados distintos: abierto,cerrado, filtrado, no filtrado, abierto|filtrado, o cerrado|filtrado.
+
+abierto : Una aplicación acepta conexiones TCP o paquetes UDP en este puerto. Cada puerto abierto es un vector de ataque.
+
+cerrado: Es accesible, pero no tiene una aplicacion escuando en él.  Pueden ser utiles para saber si un equipo está activo, y pueden servir en un futuro si se llegan a abrir (y no se filtran).
+
+filtrado: 
+Nmap no puede determinar si el puerto se encuentra abierto porque un filtrado de paquetes previene que sus sondas alcancen el puerto. El filtrado peude provenir de cortafuegos dedicado, de las reglas de un enrutador, o por una aplicación de cortafuegos instalada en el propio equipo. Esto ralentiza drásticamente los sondeos
+
+no filtrado:  El puerto es accesible, pero Nmap no puede determinar si se encuentra abierto o cerrado.
+
+abierto|filtrado: Nmap No puede determinar si el puerto se encuentra abierto o filtrado.
+ Los sondeos UDP, protocolo IP, FIN, Null y Xmas clasifican a los puertos de esta manera.
+
+cerrado|filtrado: Este estado se utiliza cuando Nmap no puede determinar si un puerto se encuentra cerrado o filtrado, y puede aparecer aparecer sólo durante un sondeo IPID pasivo.
+_________________________________
+Técnicas de sondeo de Puertos:
+_________________________________
+-sS : (sondeo TCP SYN) 
+Es utilizado por omisión y es el más popular. El sondeo SYN no llega a completar las conexiones TCP por eso se le conoce a esta tecnica como sondeo medio abierto. (por lo que es sigiloso). Funciona contra cualquier pila TCP independiente de la plataforma ( a diferencia de Fun/Null/xmas maimon o pasivo).
+Se envía un packete SYN como si se fuera a abrir una conexión real y se espera a la respuesta. Si se recibe un paq SYN/ACK indica q el puerto esta abierto (escucha), si se recibe RST indica que no hay nada escuchando en el puerto. Si no se recibe respuesta o se recibe un error de tipo ICMP (tipo 3 cod 1,2,3,9,10,13) se marca como filtrado.
+
+-sT: (sondeo TCP connect)
+Es el sondeo TCP por omisión cuando no se puede utilizar el SYN. (cuando el usuario no tiene priv para enviar paquetes en crudo para redes ipv6). Utiliza la llamada del sistema conect() (API).  Se tarda más tiempo y son necesarios más paquetes para obtener la información, probablemente los sistemas obejtivos si disponene deun IDS pueden registrar y detectar la conexión. (muchos sistemas UNIX añadiran una nota en el syslog, en ocasiones con un mensaje de error extraño).
+
+- sU ( sondeos UDP)
+Los servicios más comunes de UDP son DNS, SNMP, y DHCP( puertos 53, 161/162, y 67/68), es muy frecuente encontrarse con servicios UDP vulnerables. ( es generalmente más lente y dificil q TCP). Puede combinarse con el sondeo SYN.
+Funcionan mediante el envio (sin datos) de una cabecera UDP para cada puerto objetivo. Si se obitene error ICMP (tipo 3 cod 3) se marca el pto como cerrado. Si se recibe cualquier error ICMP no alcanzable (tip3 cod 1,2,9,10 o 13) se marca el pto como filtrado. Si se recibe rspta al paquete UDP se marca el pto como abierto. Si no se recibe respta se clasifica como abierto|filtrado.  Para diferenciar los puertos abiertos de los filtrados podría utilizarse el sondeo -sV.
+Los puertos cerrados son los mas comunes y generalmente envian un error ICMP de puerto  no alcanzable. Muchos sistemas imponene un tasa max de mensajes ICMP de puerto inalcanzable. ( Linux y Solaris son muy estrictos con 1 por segundo[net/ipv4/icmp.c]), es por esto que Namp se realentiza para no inundar la red con paquetes inutiles.
+Puede acelerar los sondeos UDP incluyendo más de un sistema para realizar un sondeo en paralelo y tambien utilizando la opcion --host-timeout para omitir los sistemas que respondan con lentitud.
+
+-sN ; -sF ; -sX :
+(Sondeos TCP Null, Fin y Xmas)
+Aprovechan una indefinicion en la RFC de TCP que diferencia los puertos abiertos y cerrados.
+TCP. 
+
+ Son validos las combinaciones FIN, PSH,y URG.
+
+-sN: (Null): No fija ningun bit( la cabecera de banderas TCP es 0)
+-sF (FIN): Solo fija el bit TCP FIN.
+-sX (Xmas): Fija los bits FIN, PSH y URG flags.
+
+Cualquier paquete que no contenga los bits SYN, RST o ACK resultará en el retorno de un RST si el puerto está cerrado y no habrá respuesta si el puerto está abierto|filtrado. Se marca filtrado si se recibe error ICMP no alcanzable (tipo 3, codigo 1,2,3,9,10,13).
+Estos sondeos pueden atravesar algunos cortafuegos que no hagan inspeccion de estados o encaminadores que hagan filtrado de paquetes. Otra ventaja es que son mas sigilosos  que incluso los SYN, sin embargo la mayoria de IDS pueden detectarlos. Otro problema es que no todos los sistemas siguen el estandar RFC 739 ( Windows, cisco, BSDI, IBM OS/400). Otro problema es que no se pueden distinguir los puertos abiertos de algunos peurtos fitlrados.
+
+-sA (sondeo TCP ACK):
+No puede determinar puertos abiertos ( incluso abiertos|filtrados).  Se utiliza para mapear reglas de firewalls y los puertos filtrados. Se marcan como filtrados los puertos que envian mensajes de error ICMP en respuesta (tipo 3 codigo 1,2,3,9,10 o13).
+
+-sW ( sondeo de ventana TCP)
+-sM ( sondeo TCP Maimon)
+
+--scanflags (Sondeo TCP a medida) :
+Permite diseñar su propio sondeo a medida de las flags TCP arbitrarias. 
+Sólo tiene que juntar una combinación URG ACK PSH RST SYN y FIN. 
+(--scanflags URGACKPSHRSTSYNFIN fijará todas las banderas)
+Se puede especificar el tipo de sondeo TCP ( como -sA o -sF).
+
+-sI <sistema zombi [:puerto_sonda]>: 
+( Sondeo ocioso)
+Metodo avanzado, sondeo TCP a ciegas, se utiliza un ataque con un canal alternativo que se aprovecah de la generacion de la secuencia de los identificadores de fragmentación IP del sistema zombi para obtener informacion de los puertos abiertos en el objetivo. Es extremandamente sigiloso y permite determianr las relaciones basadas en IP entre distintos sitemas.
+https://nmap.org/book/idlescan.html.
+
+-sO (sondeo de protocolo IP):
+Permite determinar los protocolos que soportan los sistemas objetivo ( TCP, ICMP, IGMP,etc). Se puede usar la opcion -p para seleccionar los numeros de protocolo a analizar.
+Envia cabeceras de paquetes IP generalmente vacias y no contienend datos. Se marca el protocolo como abierto si recibe una respuesta en cualquier protocolo del sistea obejtivo. Se marca como cerrado si se recibe error ICMP de protocolo no alcanzable (tipo 3 cod 2). Si se reciben otros errores de ICMP no alcanzable  (tipo 3 cod 1,3,9,10 o 13) se marca como filtrado. Se marca como abierto|filtrado si no se recibe ninguna respuesta.
+
+-b <sistema de rebote ftp>
+(sondeo de rebote FTP):
+RFC 959 posibilita el uso de conexiones FTP de pasarela. (muchos servidores han dejado de soportarla). la opcion -b toma como argumento a : "usuario:contraseña@servidor:puerto"
+servidor: direccion ip del server ftp vulnerable.(puerto 21).
+
+------------------------------------------
+Especificacion de puertos y orden de sondeo
+-------------------------------------------
+
+-p <rango de puertos> :
+Especifica los puertos que desea sondear.  Se puede especificar un protocolo para el sondeo (TCP o UDP)
+ejemplo: la opcion -p
+U:53,111,137, T:21-25,80,139,8080, para sondear tanto UDP como TCP debemos especificar la opcion     -Su y al menos un tipo de sondeo TCP ( como -sS -sF o -sT) 
+
+-f (sondeo rápido de puertos limitados)
+Se sondearan los puertos listandos en nmap-services ( o el fichero de protocolos si se indica -sO). Se puede especificar su propio fichero de nmap-services personal si se utiliza la opcion --datadir
+
+-r ( no aleatorizar los puertos escaneados)
+
+------------------------------------
+Detección de Servicios y Versiones
+-------------------------------------
+La gente ejecuta a veces servicios distintos en puertos inesperados.
+Puede ayudar mucho a la hora de determinar que ataques pueden afectar a un servidor el saber el numero de version exacto de este. 
+
+Nmap intenta determinar el protocolo del servicio (ex: ftp, ssh, telnet, http , etc), el nomb re de la aplicacion (ex: Bind de ISc, hhtp de Apache, telenetd de Solaris), un numero de version, un tipo de dispositivo(impresora router etc), la familia del sistema operativo y algunos detalles miscelaneos (version ssh, nombre de usuario Kazaa etc).
+La opcion -A actualiza la deteccion de versiones entre otras cosas. 
+https://nmap.org/vscan/
+
+-sV (deteccion de versiones)
+Activa la deteccion de versiones, tambien se peude utiliza -A para la deteccon de versiones como la de sistema operativo.
+
+--allports (no excluir ningun puerto de la deteccion de versiones)
+La deteccion de versiones omite el puerto TCP 9100 debido a que algunas impertosas imprimen cuando reciben de ese puerto.
+
+--version-intensity:
+Cuanto mas alto el numero más probabilidades de identificar el servicio, sin emabrgo tardan mas tiempo. (del 0 al 9). 7 por omisión.
+
+--version-light (modo ligero):
+alias para --version-intensity 2
+
+--version-all (todas las sondas)
+alias para --version-intensity 9
+
+--version-trace (traza de activid)
+Imprime info de depuracion detallada sobre el sondeo. Es un conjunto de lo que obtendria si usara la opcion --packet-trace
+
+-sR : (inlcuido en -Sv)
+
+----------------------------------
+Deteccion de SO
+----------------------------------
+Nmap envia una serie de paquetes TCP y UDP y analiza todos los bits de las respuestas.
+https://nmap.org/osdetect/.
+
+-O activa la detección de sistema operativo ( tambien se puede utilizar la opcion -A)
+
+--osscan-limit ( limitar la deteccion de so a sistemas prometedores)
+
+--osscan-guess; --fuzzy ( aproximar resultados de deteccion de sistema operativo)
+
+-----------------------------------------
+Control de tiempo y rendimiento
+-----------------------------------------
+
+--host-timeout <tiempo> (Abandona equipos objetivo lentos) Habitualmente especificar 30m 
+
+-T <0|1|2|3|4|5> (Fija una plantilla de tiempos de esperadel analisis. (agresividad)
+
+0 y 1 se utilizan para evadir IDS. 2 reduce el sondeo para utilizar menos ancho de banda y menos recursos
+3 valor por omision (-T3)
+4 sondeos rapidos asume que la red es rapida y fiable
+5 asume que se esta en una red muy rapida y fiable que puede sacrificar fiabilidad por velocidad.
+
+-------------------------------------------
+Evasión de Firewalls / IDS y Falsificacion
+-------------------------------------------
+Uno de los mejores métodos de entender la posición de la seguridad de su red es intentar comprometerla.( Lanzar un sondeo de rebote FTP, un sondeo pasivo, un ataque de fragmentación, o intente un túnel desde uno de sus propios proxies).
+
+Todos los IDS vienen presintalados con reglas diseñadas para detectar sondeos de Nmap.( muchos han mutado a IPS ( sistemas de prevencion de intruciones) que bloquean activamante el trafico reconocido como maligno).
+Sin embargo es muy dificil detectar las malas intenciones analizando los datos de los paquetes. Los atacantes con paciencia, habilidad y con la ayuda de ciertas opciones de Nmap pueden, generalement, esquivar el analisis de los IDS sin ser detectados. ( los administradores de red deben lidiar con un alto numero de fasos positivos).
+
+No hay ninguna herramienta mágica ( u comando de Nmap) que permita detectar y evitar cortafuegos e IDS. Esto requiere de habildiad y experiencia.
+
+-f (fragmentar los paquetes) ; 
+--mtu (utilizar el MTU especificado) :
+La opcion -f hace que el sondeo utilicen paquetes IP fragmetnados pequeños. Si usamos la opcion -f 1 vez : Nmap dividira los paquetes en 8 bytes o menos despues de la cabecera de IP. (una cabecera TP de 20 bytes se dividira en 3 paquetes, cada fragmetno con su cabecera IP)
+Si usamos -f otra vez : se utilizaran framgenteos de 16 bytes ( reduce la cantidad de fragmetnos). O se puede especificar un tamaño de fragmento con la opcion --mtu, el tamaño debe ser multiplo de 8 (no utilizar -f y mtu al mismo tiempo) 
+-D <señuelo1 [,señuelo2][,ME],.>
+(Esconde un sondeo con señuelos): Tecnica efectiva para esconder la direccion de IP
+
+-S <Direccion_IP>
+(Falsifica la direccion Ip de origen): Generalmente es necesaria la opción -e y tambien la opcion -P0
+
+-e <interfaz>
+( Utiliza la interfaz especificada)
+
+--source-port <num_de_puerto>;
+-g <num_de_puerto>:
+(Falsificar el puerto de origen)
+
+--data-lenght <numero>
+(Añadir datos aleatorios a los paquetes enviados).
+Generalmente los paquetes TCP que envia Nmap son de 40 bytes y las solicitudes echo de ICMP son de 28. Esta opcion añade bytes aleatorios a la mayoria de paqtes q envia. Esto no afecta a los enviados para la deteccion de SO(-O) pero si a la mayoria de ping y sondeo de peurots.
+
+-ttl <valor>:
+(Indica el valor del tiempo-de-vida de la cabecera IP)
+
+--randomize-hosts (Mezlar aleat la lista de equipos a sondear)
+
+--spoof-mac <dir MAC, prefijo o nombre del fabricante>
+(Falsifica la direccion MAC).
+Esta opcion activa implicitamente la opcion --send-eth para asegurar q Nmap envia los paquetes del nivel Ethernet.  
+Si se elife el valor "0" Nmap elegira una MAC aleatoria.
+Si el paramnetro es un numero par de digitos hexadeciamles nmap utilizara la direccion.
+
+--badsum
+(Envia paquetes con sumas de comprobacion TCP/UDP erróneas):
+Cualqueir respuesta que se reciba vendra de un firewall o un IDS que no comprobó la suma.
+https://nmap.org/p60-12.txt
+
+----------------------------
+Salida
+----------------------------
+-oN <filespec> 
+(Salida normal).
+Solicita que la salida sea redirigida al archivo especificado
+
+
+-oX <filespec>
+(Salida XML)
+Está más diriga para que la utilicen programas
+https://nmap.org/data/nmap.dtd.
+
+-oS <filespec>
+(Salida Script KIdd|3) xdddd Gaa
+
+-oG <filespace>
+(Salida "grepeable")
+Formato que lista cada sistema en una linea y que puede ser facilemten tratado con herramientas como grep, awk, cut, sed, diff y Perl.
+
+-v (Incrementa el nivel de detalle sobre el sondeo)
+
+-d [level] (Incremetnar o fijar el nivel de depuracion)
+Es util cuando sopecha un fallo en Nmap o requiere de mucha informacion acerca de lo que realiza Nmap.
+
+--packet-trace (trazar paquetes y datos enviados y recibidos), puede especificar un numero reducido de púertos para evitar que se imprarm miles de lienas( ex -p20-30)
+
+--iflist (listar interfaces y rutas)
+
+
+------------------------------------
+Nmap Script Engine
+-----------------------------------
+
+nmap -Sc : runs default scripts..
+
+
+
+
